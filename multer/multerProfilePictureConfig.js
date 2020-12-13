@@ -1,7 +1,7 @@
 const multer = require('multer');
 const storage = multer.diskStorage({
     destination : function(req,file,cb){
-        cb(null,'./uploads/trailerVideos')
+        cb(null,'./uploads/profilePictures')
     },
     filename : function(req,file,cb){
         cb(null, Date.now()+ " - " + file.originalname)
@@ -9,9 +9,8 @@ const storage = multer.diskStorage({
 });
 
 const fileFilter = (req,file,cb) => {
-    if(file.mimetype === 'video/mp4' || file.mimetype === 'video/avi' ||
-       file.mimetype === 'video/mkv' || file.mimetype === 'video/3gp' ||
-       file.mimetype === 'video/flv' || file.mimetype === 'video/webm'){
+    if(file.mimetype === 'image/jpg' || file.mimetype === 'image/png' ||
+       file.mimetype === 'image/jpeg'){
         cb(null,true);
     }
     else {

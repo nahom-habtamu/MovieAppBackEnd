@@ -1,134 +1,115 @@
-const express = require('express');
 const mongoose = require('mongoose');
-const { Admin, adminValidationSchema } = require('../models/admin');
-const { User } = require('../models/user');
-
-const auth = require('../middlewares/auth');
-const { admin} = require('../middlewares/role');
-
+const express = require('express');
+const { Admin, adminValidationSchema } = require('../models/Admin');
 const router = express.Router();
 
-router.get('/',[auth,admin],async(req,res) => {
+
+router.get('/', async(req,res) => {
+    
     try {
         const admins = await Admin.find({});
-        if(admins){
-            res.status(200).send(admins);
-        }
-        else {
-            throw new Error('Admins not found in database');
-        }
+        res.status(200).send(admins);
     } 
     catch (error) {
-        res.status(400).send(error.message);    
+        res.status(400).send(error.message);
     }
 });
 
-router.get('/:id',[auth,admin],async (req,res) => {
+router.get('/:id', async(req,res) => {
+    
     try {
         const id = req.params.id;
         if(mongoose.Types.ObjectId.isValid(id)){
             const admin = await Admin.findById(id);
             if(admin){
                 res.status(200).send(admin);
-            }    
+            }
             else {
-                throw new Error("Admin with that ID not found");
+                throw new Error('Admin Not Found');
             }
         }
         else {
-            throw new Error("Invalid ID");
+            throw new Error('Invalid Admin Identifier');
         }
     } 
     catch (error) {
         res.status(400).send(error.message);
     }
+
 });
 
-router.post('/', async(req,res) => {
-
+router.delete('/:id', async(req,res) => {
+    
     try {
-        
-        const { error } = adminValidationSchema.validate(req.body);
-        if(error){
-            throw new Error(error.message);
-        }
-        else {
-            const duplicate = await Admin.find({ phoneNumber : req.body.phoneNumber});
-            if(duplicate.length === 0){   
-                const admin = new Admin({
-                    fullName : req.body.fullName,
-                    phoneNumber : req.body.phoneNumber,
-                });
-                const response = await admin.save();
-                res.status(200).send(response);
-            }
-            else {
-                throw new Error('Admin Already Registered')
-            }
-        }
-    } 
-    catch (error) {
-        res.status(400).send(error.message);
-    }
-});
-
-router.delete('/me',[auth,admin],async(req,res) => {
-    try {
-        const id = req.user.cpaID;
+        const id = req.params.id;
         if(mongoose.Types.ObjectId.isValid(id)){
-            const response = await Admin.findByIdAndDelete(id);
-            if(response){
-                res.status(200).send(response);
-            }
-            else {
-                throw new Error('Admin with that ID not found');
-            }
+            const deleted = await Admin.findByIdAndDelete(id);
+            if(deleted)
+                res.status(200).send(deleted);
+            else 
+                throw new Error('Admin not found');
         }
         else {
             throw new Error('Invalid Id');
-        }    
+        }   
     } 
     catch (error) {
         res.status(400).send(error.message);
     }
+
 });
 
-router.put('/:id',[auth,admin],async(req,res) => {
+router.post('/', async(req,res) => {
+    
     try {
         const { error } = adminValidationSchema.validate(req.body);
         if(error){
-            throw new Error(error.message);
+            throw error;
         }
         else {
-            const id = req.params.id;
-            if(mongoose.Types.ObjectId.isValid(id) === true){
-                const editedAdmin = await Admin.findByIdAndUpdate(id,{
-                    fullName : req.body.fullName,
-                    phoneNumber : req.body.phoneNumber,
-                }, { new : true});
-                if(editedAdmin){
-                    const user = await User.find({ customerOrProducerId : id}).select("_id");
-                    if(user.length !== 0){
-                        const userId = user[0]._id;
-                        const editedUser = await User.findByIdAndUpdate(userId,{
-                            phoneNumber : req.body.phoneNumber 
-                        },{new : true});
-                        console.log(editedUser);
-                    }
-                    res.status(200).send(editedAdmin);
-                }
-                else {
-                    throw new Error('Admin with that Id not found');
-                }
-                
-            }
-            else {
-                throw new Error('Invalid AdminID');
-            }
+            const admin = new Admin({
+                fullName : req.body.fullName,
+                email : req.body.email,
+                phoneNumber : req.body.phoneNumber,
+                password : req.body.password,
+                permissions : req.body.permissions
+            });
+
+            const result = await admin.save();
+            res.status(200).send(result);
         }
     } 
     catch (error) {
-        res.status(400).send(error.message);
+        res.status(400).send(error.message);   
+    }
+});
+
+router.put('/:id', async(req,res) => {
+    try {
+        const id = req.params.id;
+        if(mongoose.Types.ObjectId.isValid(id)){
+            const edited = await Admin.findByIdAndUpdate(id, {
+                fullName : req.body.fullName,
+                email : req.body.email,
+                phoneNumber : req.body.phoneNumber,
+                password : req.body.password,
+                permissions : req.body.permissions
+
+            }, { new : true });
+
+            if(edited){
+                res.status(200).send(edited);
+            }
+            else {
+                throw new Error('Admin not found with given Id')
+            }
+        }
+        else {
+            throw new Error('Invalid Admin Id');
+        }
+    } 
+    catch (error) {
+        res.status(400).send(error.message);      
     }
 });
 
